@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+URL = 'http://www.pap.fr/annonce/location-appartement-loft-atelier-maison-mobil-home-peniche-paris-75-g439-a-partir-du-3-pieces-a-partir-de-2-chambres-jusqu-a-1800-euros'
+BASE = "http://www.pap.fr"
+require 'rubygems'
+require 'mechanize'
+require 'rainbow'
+
+agent = Mechanize.new
+
+home = agent.get(URL)
+pages = [home]
+3.times do |i|
+    pages << home.link_with(:text => "#{i+2}").click
+end
+
+pages.each do |page|
+     (page/"div.annonce").each do |item|
+        prix = (item/"h2 .prix").inner_text.gsub('.','').to_i
+        surface = (item/"h2 .surface").inner_text.to_i
+        link = BASE + (item/"h2 a").first.attributes['href'].to_s
+        place = (item/".annonce-resume-texte b").inner_text.to_s
+        metro =  (item/".metro").inner_text.to_s
+        date = (item/".date-publication").inner_text.to_s.gsub('Annonce nouvelle du  ','')
+        desc = (item/".annonce-resume-texte").inner_text.gsub(/\s+/,' ').to_s
+        
+        if desc.include?("comprise")
+            tax = "ttc"
+        elsif  (desc =~ /\+\s*(\d+)\s*/)
+            tax = "+ #{$1}"
+        else
+            tax = "+ ???"
+        end
+
+        puts "#{prix} #{tax}".color(:black).background(:yellow) + " #{surface}m".color(:red) + " #{place} #{metro}".color(:blue) + " #{date}".color(:red) + " #{link}"
+        puts desc
+        puts ""
+    end
+end
