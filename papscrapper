@@ -31,7 +31,7 @@ pages.each do |page|
             tax = "+ ???"
         end
 
-        puts "#{prix} #{tax}".color(:black).background(:yellow) + " #{surface}m".color(:red) + " #{place} #{metro}".color(:blue) + " #{date}".color(:red) + " #{link}"
+        puts "#{prix} #{tax}".color(:black).background(:yellow) + " #{surface.zero? ? '??' : surface}m".color(:red) + " #{place} #{metro}".color(:blue) + " #{date}".color(:red) + " #{link}"
         puts desc
         puts ""
     end
