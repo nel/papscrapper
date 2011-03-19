@@ -22,16 +22,19 @@ pages.each do |page|
         metro =  (item/".metro").inner_text.to_s
         date = (item/".date-publication").inner_text.to_s.gsub('Annonce nouvelle du  ','')
         desc = (item/".annonce-resume-texte").inner_text.gsub(/\s+/,' ').to_s
-        
-        if desc.include?("comprise")
+        phones = desc.scan(/((?:\d{2}\.?){5})/).flatten
+        tax_included =  desc.include?("comprise")
+        tax_level = (desc =~ /\+\s*(\d+)\s*/) && $1
+
+        if tax_included
             tax = "ttc"
-        elsif  (desc =~ /\+\s*(\d+)\s*/)
-            tax = "+ #{$1}"
+        elsif tax_level
+            tax = "+ #{tax_level}"
         else
             tax = "+ ???"
         end
 
-        puts "#{prix} #{tax}".color(:black).background(:yellow) + " #{surface.zero? ? '??' : surface}m".color(:red) + " #{place} #{metro}".color(:blue) + " #{date}".color(:red) + " #{link}"
+        puts "#{prix} #{tax}".color(:black).background(:yellow) + " #{surface.zero? ? '??' : surface}m".color(:red) + " #{place} #{metro}".color(:blue) + " #{date}".color(:red) + " #{phones.join(', ')}".color(:green) + " #{link}"
         puts desc
         puts ""
     end
