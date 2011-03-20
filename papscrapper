@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-URL = 'http://www.pap.fr/annonce/location-appartement-loft-atelier-maison-mobil-home-peniche-paris-75-g439-a-partir-du-3-pieces-a-partir-de-2-chambres-jusqu-a-1800-euros'
+URL = 'http://www.pap.fr/annonce/location-appartement-loft-atelier-maison-mobil-home-peniche-paris-75-g439-a-partir-du-3-pieces-a-partir-de-2-chambres-jusqu-a-1600-euros'
 BASE = "http://www.pap.fr"
 require 'rubygems'
 require 'mechanize'
@@ -10,13 +10,14 @@ agent = Mechanize.new
 home = agent.get(URL)
 pages = [home]
 3.times do |i|
-    pages << home.link_with(:text => "#{i+2}").click
+    page = home.link_with(:text => "#{i+2}")
+    pages << page.click if page
 end
 
 pages.each do |page|
      (page/"div.annonce").each do |item|
-        prix = (item/"h2 .prix").inner_text.gsub('.','').to_i
-        surface = (item/"h2 .surface").inner_text.to_i
+        price = (item/"h2 .prix").inner_text.gsub('.','').to_i
+        area = (item/"h2 .surface").inner_text.to_i
         link = BASE + (item/"h2 a").first.attributes['href'].to_s
         place = (item/".annonce-resume-texte b").inner_text.to_s
         metro =  (item/".metro").inner_text.to_s
@@ -24,17 +25,26 @@ pages.each do |page|
         desc = (item/".annonce-resume-texte").inner_text.gsub(/\s+/,' ').to_s
         phones = desc.scan(/((?:\d{2}\.?){5})/).flatten
         tax_included =  desc.include?("comprise")
-        tax_level = (desc =~ /\+\s*(\d+)\s*/) && $1
+        tax_level = ((desc =~ /\+\s*(\d+)\s*/) && $1).to_i
+        grand_total = price + tax_level
+        ratio = area.zero? ? 0 : grand_total.to_f/area
 
-        if tax_included
-            tax = "ttc"
-        elsif tax_level
-            tax = "+ #{tax_level}"
-        else
-            tax = "+ ???"
+        # custom rules
+        if grand_total > 1600
+            next
+        elsif area > 0 && area < 50
+            next
         end
 
-        puts "#{prix} #{tax}".color(:black).background(:yellow) + " #{surface.zero? ? '??' : surface}m".color(:red) + " #{place} #{metro}".color(:blue) + " #{date}".color(:red) + " #{phones.join(', ')}".color(:green) + " #{link}"
+        #display
+        rate = ratio >0 ? " %2.2fEUR/m²" % ratio : ''
+
+        puts    "#{grand_total} #{(tax_included || tax_level > 0)? 'cc' + rate : '+ ???'}".color(:black).background(:yellow) +
+                " #{area.zero? ? '??' : area}m²".color(:red) +
+                " #{place} #{metro}".color(:blue) +
+                " #{date}".color(:red) +
+                " #{phones.join(', ')}".color(:green) +
+                " #{link}"
         puts desc
         puts ""
     end
